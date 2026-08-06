@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "972752800802",
+    "project_id": "appkiosco-1b3be",
+    "storage_bucket": "appkiosco-1b3be.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:972752800802:android:dff220a16aea70b7520e7b",
+        "android_client_info": {
+          "package_name": "com.ejemplo.kioscoapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDOEha1yE_pGXa1M10-B1H9NqgeCRGe9LU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
