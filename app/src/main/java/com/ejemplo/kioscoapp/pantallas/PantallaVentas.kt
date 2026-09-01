@@ -69,8 +69,8 @@ import com.ejemplo.kioscoapp.ui.theme.KioscoSuperficie
 import com.ejemplo.kioscoapp.ui.theme.KioscoSuperficieVariante
 import com.ejemplo.kioscoapp.ui.theme.KioscoTextoSecundario
 import java.text.NumberFormat
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 private data class ProductoVenta(
@@ -127,12 +127,12 @@ private fun formatearPrecio(precio: Double): String {
 }
 
 private fun horaActual(): String {
-    return LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+    return SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaVentas(navController: NavController) {
+fun PantallaVentas(navController: NavController, rol: String, nombreUsuario: String) {
     var pestañaSeleccionada by remember { mutableIntStateOf(0) }
     val pestañas = listOf("Nueva Venta", "Historial de Hoy")
     val historialHoy = remember { mutableStateListOf(*historialInicial.toTypedArray()) }
@@ -140,10 +140,15 @@ fun PantallaVentas(navController: NavController) {
 
     Scaffold(
         topBar = {
-            BarraSuperior(titulo = "Registro de Ventas")
+            BarraSuperior(
+                titulo = "Registro de Ventas",
+                nombreUsuario = nombreUsuario,
+                rolUsuario = rol,
+                navController = navController
+            )
         },
         bottomBar = {
-            BarraInferior(navController = navController)
+            BarraInferior(navController = navController, rol = rol)
         },
         containerColor = KioscoNegro
     ) { innerPadding ->

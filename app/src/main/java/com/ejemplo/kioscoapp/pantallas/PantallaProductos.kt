@@ -44,7 +44,7 @@ val listaInventarioPrueba = mutableStateListOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaProductos(navController: NavController) {
+fun PantallaProductos(navController: NavController, rol: String, nombreUsuario: String) {
     var busqueda by remember { mutableStateOf("") }
     var mostrarDialogoAgregar by remember { mutableStateOf(false) }
 
@@ -53,15 +53,24 @@ fun PantallaProductos(navController: NavController) {
     }
 
     Scaffold(
-        topBar = { BarraSuperior(titulo = "Gestión de Inventario") },
-        bottomBar = { BarraInferior(navController = navController) },
+        topBar = { 
+            BarraSuperior(
+                titulo = "Gestión de Inventario",
+                nombreUsuario = nombreUsuario,
+                rolUsuario = rol,
+                navController = navController
+            ) 
+        },
+        bottomBar = { BarraInferior(navController = navController, rol = rol) },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { mostrarDialogoAgregar = true },
-                containerColor = KioscoMostaza,
-                contentColor = KioscoNegro
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar producto")
+            if (rol == "admin" || rol == "administrador") {
+                FloatingActionButton(
+                    onClick = { mostrarDialogoAgregar = true },
+                    containerColor = KioscoMostaza,
+                    contentColor = KioscoNegro
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar producto")
+                }
             }
         },
         containerColor = KioscoNegro
