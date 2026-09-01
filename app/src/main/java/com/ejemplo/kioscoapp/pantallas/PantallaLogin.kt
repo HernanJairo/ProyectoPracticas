@@ -1,514 +1,437 @@
 package com.ejemplo.kioscoapp.pantallas
 
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ejemplo.kioscoapp.ui.theme.KioscoDorado
 import com.ejemplo.kioscoapp.ui.theme.KioscoMostaza
 import com.ejemplo.kioscoapp.ui.theme.KioscoNegro
+import com.ejemplo.kioscoapp.ui.theme.KioscoSuperficie
+import com.ejemplo.kioscoapp.ui.theme.KioscoSuperficieVariante
+import com.ejemplo.kioscoapp.ui.theme.KioscoTextoSecundario
+import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import kotlin.random.Random
 
-private enum class RolLogin(val etiqueta: String) {
-    ALUMNO("Alumno"),
-    VENDEDORA("Vendedora"),
-    ADMINISTRADOR("Administrador")
-}
+private const val WHATSAPP_NUMERO = "5493884344567"
+private const val WHATSAPP_TEXTO_DEFECTO = "Hola, quería consultar sobre el kiosco del instituto."
+private const val INSTAGRAM_USUARIO = "kiosco.instituto"
 
-private const val WHATSAPP_NUMERO = "+54 388 123-4567"
-private const val WHATSAPP_NUMERO_LIMPIO = "543881234567"
+data class CompraSimulada(
+    val detalle: String,
+    val fecha: String,
+    val monto: Double
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaLogin(
-    modifier: Modifier = Modifier,
-    onIrACatalogo: () -> Unit = {},
-    onIngresoAlumno: (dni: String) -> Unit = {},
-    onIniciarSesion: (usuario: String, contrasena: String, rol: String) -> Unit = { _, _, _ -> },
-    onGoogleSignIn: () -> Unit = {},
-    onFacebookSignIn: () -> Unit = {}
+    onIrACatalogo: () -> Unit,
+    onConsultarDniAlumno: (String, (String, Double) -> Unit, () -> Unit) -> Unit,
+    onIniciarSesionPersonal: (String, String) -> Unit
 ) {
-    var rolSeleccionado by remember { mutableStateOf(RolLogin.ALUMNO) }
-    var menuRolExpandido by remember { mutableStateOf(false) }
+    val uriHandler = LocalUriHandler.current
 
-    var dni by remember { mutableStateOf("") }
-    var usuario by remember { mutableStateOf("") }
-    var contrasena by remember { mutableStateOf("") }
-    var contrasenaVisible by remember { mutableStateOf(false) }
-    var mensajeError by remember { mutableStateOf<String?>(null) }
+    var dniAlumno by remember { mutableStateOf("") }
+    var usuarioPersonal by remember { mutableStateOf("") }
+    var contrasenaPersonal by remember { mutableStateOf("") }
+    var verContrasena by remember { mutableStateOf(false) }
+
+    var cargandoAlumno by remember { mutableStateOf(false) }
+    var mostrarErrorAlumno by remember { mutableStateOf(false) }
     var mostrarDialogoContacto by remember { mutableStateOf(false) }
 
-    val focusManager = LocalFocusManager.current
-    val context = LocalContext.current
-    val scrollState = rememberScrollState()
+    // Datos del alumno para el modal de resultado
+    var nombreAlumnoModal by remember { mutableStateOf<String?>(null) }
+    var saldoAlumnoModal by remember { mutableStateOf<Double?>(null) }
+    var historialAlumnoModal by remember { mutableStateOf<List<CompraSimulada>>(emptyList()) }
+    var mostrarDialogoAlumno by remember { mutableStateOf(false) }
 
-    val coloresCampo = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = KioscoMostaza,
-        unfocusedBorderColor = KioscoDorado.copy(alpha = 0.5f),
-        focusedLabelColor = KioscoMostaza,
-        unfocusedLabelColor = KioscoDorado,
-        cursorColor = KioscoMostaza,
-        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-    )
-
-    fun limpiarCamposAlCambiarRol() {
-        dni = ""
-        usuario = ""
-        contrasena = ""
-        mensajeError = null
-        contrasenaVisible = false
-    }
-
-    fun intentarAccionPrincipal() {
-        focusManager.clearFocus()
-        when (rolSeleccionado) {
-            RolLogin.ALUMNO -> {
-                if (dni.isBlank()) {
-                    mensajeError = "Ingresá tu número de documento (DNI)"
-                } else {
-                    mensajeError = null
-                    onIngresoAlumno(dni.trim())
-                }
-            }
-            RolLogin.VENDEDORA, RolLogin.ADMINISTRADOR -> {
-                when {
-                    usuario.isBlank() || contrasena.isBlank() -> {
-                        mensajeError = "Completa usuario/correo y contraseña"
+    Scaffold(
+        topBar = {
+            // Barra superior de accesos directos: Catálogo (izq) y Contacto (der)
+            TopAppBar(
+                title = {},
+                navigationIcon = {
+                    TextButton(onClick = onIrACatalogo) {
+                        Icon(Icons.Default.ShoppingBag, contentDescription = "Catálogo", tint = KioscoMostaza)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Catálogo", color = KioscoMostaza)
                     }
-                    else -> {
-                        mensajeError = null
-                        onIniciarSesion(usuario.trim(), contrasena, rolSeleccionado.etiqueta)
+                },
+                actions = {
+                    TextButton(onClick = { mostrarDialogoContacto = true }) {
+                        Text("Contacto", color = KioscoMostaza)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(Icons.Default.ContactPhone, contentDescription = "Contacto", tint = KioscoMostaza)
                     }
-                }
-            }
-        }
-    }
-
-    fun abrirWhatsApp() {
-        val intent = Intent(
-            Intent.ACTION_VIEW,
-            Uri.parse("https://wa.me/$WHATSAPP_NUMERO_LIMPIO")
-        )
-        context.startActivity(intent)
-    }
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(KioscoNegro)
-    ) {
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = KioscoNegro)
+            )
+        },
+        containerColor = KioscoNegro
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(horizontal = 24.dp)
+                .verticalScrollFallback()
+                .padding(innerPadding)
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(onClick = onIrACatalogo) {
-                    Icon(
-                        imageVector = Icons.Default.ShoppingBag,
-                        contentDescription = "Ir al catálogo",
-                        tint = KioscoMostaza,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = " Catálogo",
-                        color = KioscoMostaza,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                TextButton(onClick = { mostrarDialogoContacto = true }) {
-                    Icon(
-                        imageVector = Icons.Default.Chat,
-                        contentDescription = "Contacto WhatsApp",
-                        tint = KioscoDorado,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = " Contacto",
-                        color = KioscoDorado,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(48.dp))
+            Icon(
+                imageVector = Icons.Default.Storefront,
+                contentDescription = null,
+                tint = KioscoMostaza,
+                modifier = Modifier.size(80.dp)
+            )
 
             Text(
-                text = "Kiosco",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
+                text = "Kiosco App",
                 color = KioscoMostaza,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                letterSpacing = 2.sp
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Bienvenido — elegí tu rol para continuar",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
+                text = "Sistema de Gestión y Ventas",
+                color = KioscoDorado,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = 32.dp)
             )
 
-            Spacer(modifier = Modifier.height(36.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = menuRolExpandido,
-                onExpandedChange = { menuRolExpandido = it },
-                modifier = Modifier.fillMaxWidth()
+            // SECCIÓN ALUMNOS (Consulta de Saldo) - solo DNI
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = KioscoSuperficie),
+                shape = RoundedCornerShape(16.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, KioscoDorado.copy(alpha = 0.3f))
             ) {
-                OutlinedTextField(
-                    value = rolSeleccionado.etiqueta,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Rol") },
-                    trailingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Desplegar roles",
-                            tint = KioscoMostaza
-                        )
-                    },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth(),
-                    colors = coloresCampo,
-                    shape = RoundedCornerShape(12.dp)
-                )
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Consulta de Alumnos",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Text(
+                        text = "Ingresá tu DNI para ver tu saldo disponible",
+                        color = KioscoTextoSecundario,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
 
-                ExposedDropdownMenu(
-                    expanded = menuRolExpandido,
-                    onDismissRequest = { menuRolExpandido = false },
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    RolLogin.entries.forEach { rol ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = rol.etiqueta,
-                                    color = if (rol == rolSeleccionado) {
-                                        KioscoMostaza
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurface
-                                    },
-                                    fontWeight = if (rol == rolSeleccionado) {
-                                        FontWeight.Bold
-                                    } else {
-                                        FontWeight.Normal
-                                    }
-                                )
-                            },
-                            onClick = {
-                                rolSeleccionado = rol
-                                menuRolExpandido = false
-                                limpiarCamposAlCambiarRol()
-                            }
+                    OutlinedTextField(
+                        value = dniAlumno,
+                        onValueChange = {
+                            dniAlumno = it
+                            mostrarErrorAlumno = false
+                        },
+                        label = { Text("DNI del Alumno") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = outlinedTextFieldColors()
+                    )
+
+                    if (mostrarErrorAlumno) {
+                        Text(
+                            text = "DNI no encontrado. Verificá los datos.",
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(top = 8.dp)
                         )
+                    }
+
+                    Button(
+                        onClick = {
+                            if (dniAlumno.isNotBlank()) {
+                                cargandoAlumno = true
+                                onConsultarDniAlumno(dniAlumno, { nombre, saldo ->
+                                    nombreAlumnoModal = nombre
+                                    saldoAlumnoModal = saldo
+                                    historialAlumnoModal = generarHistorialSimulado(nombre)
+                                    cargandoAlumno = false
+                                    mostrarDialogoAlumno = true
+                                }, {
+                                    mostrarErrorAlumno = true
+                                    cargandoAlumno = false
+                                })
+                            }
+                        },
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = KioscoMostaza, contentColor = KioscoNegro),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !cargandoAlumno && dniAlumno.isNotBlank()
+                    ) {
+                        if (cargandoAlumno) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = KioscoNegro, strokeWidth = 2.dp)
+                        } else {
+                            Text("Consultar Saldo")
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            when (rolSeleccionado) {
-                RolLogin.ALUMNO -> {
-                    OutlinedTextField(
-                        value = dni,
-                        onValueChange = {
-                            dni = it.filter { c -> c.isDigit() }
-                            mensajeError = null
-                        },
-                        label = { Text("Número de Documento (DNI)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = mensajeError != null,
-                        colors = coloresCampo,
-                        shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = { intentarAccionPrincipal() }
-                        )
-                    )
-                }
-
-                RolLogin.VENDEDORA, RolLogin.ADMINISTRADOR -> {
-                    OutlinedTextField(
-                        value = usuario,
-                        onValueChange = {
-                            usuario = it
-                            mensajeError = null
-                        },
-                        label = { Text("Usuario / Correo") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = mensajeError != null && usuario.isBlank(),
-                        colors = coloresCampo,
-                        shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        )
+            // SECCIÓN PERSONAL (Ingreso con Usuario/Contraseña)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = KioscoSuperficieVariante),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Ingreso de Personal",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     OutlinedTextField(
-                        value = contrasena,
-                        onValueChange = {
-                            contrasena = it
-                            mensajeError = null
-                        },
+                        value = usuarioPersonal,
+                        onValueChange = { usuarioPersonal = it },
+                        label = { Text("Usuario") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = KioscoDorado) },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = outlinedTextFieldColors()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = contrasenaPersonal,
+                        onValueChange = { contrasenaPersonal = it },
                         label = { Text("Contraseña") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        isError = mensajeError != null && contrasena.isBlank(),
-                        visualTransformation = if (contrasenaVisible) {
-                            VisualTransformation.None
-                        } else {
-                            PasswordVisualTransformation()
-                        },
+                        visualTransformation = if (verContrasena) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = KioscoDorado) },
                         trailingIcon = {
-                            IconButton(onClick = { contrasenaVisible = !contrasenaVisible }) {
+                            IconButton(onClick = { verContrasena = !verContrasena }) {
                                 Icon(
-                                    imageVector = if (contrasenaVisible) {
-                                        Icons.Default.VisibilityOff
-                                    } else {
-                                        Icons.Default.Visibility
-                                    },
-                                    contentDescription = if (contrasenaVisible) {
-                                        "Ocultar contraseña"
-                                    } else {
-                                        "Mostrar contraseña"
-                                    },
+                                    imageVector = if (verContrasena) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = null,
                                     tint = KioscoDorado
                                 )
                             }
                         },
-                        colors = coloresCampo,
                         shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = { intentarAccionPrincipal() }
-                        )
+                        colors = outlinedTextFieldColors()
                     )
+
+                    Button(
+                        onClick = { onIniciarSesionPersonal(usuarioPersonal, contrasenaPersonal) },
+                        modifier = Modifier
+                            .padding(top = 16.dp)
+                            .fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = KioscoDorado, contentColor = KioscoNegro),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = usuarioPersonal.isNotBlank() && contrasenaPersonal.isNotBlank()
+                    ) {
+                        Text("Iniciar Sesión")
+                    }
                 }
             }
-
-            mensajeError?.let { error ->
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            Button(
-                onClick = { intentarAccionPrincipal() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = KioscoMostaza,
-                    contentColor = KioscoNegro
-                )
-            ) {
-                Text(
-                    text = if (rolSeleccionado == RolLogin.ALUMNO) "Ingresar" else "Iniciar Sesión",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            if (rolSeleccionado == RolLogin.VENDEDORA || rolSeleccionado == RolLogin.ADMINISTRADOR) {
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    HorizontalDivider(
-                        modifier = Modifier.weight(1f),
-                        color = KioscoDorado.copy(alpha = 0.3f)
-                    )
-                    Text(
-                        text = "  o  ",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.weight(1f),
-                        color = KioscoDorado.copy(alpha = 0.3f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                OutlinedButton(
-                    onClick = onGoogleSignIn,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    border = BorderStroke(1.dp, KioscoDorado.copy(alpha = 0.6f))
-                ) {
-                    Text(text = "Continuar con Google", fontWeight = FontWeight.Medium)
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedButton(
-                    onClick = onFacebookSignIn,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    border = BorderStroke(1.dp, KioscoDorado.copy(alpha = 0.6f))
-                ) {
-                    Text(text = "Continuar con Facebook", fontWeight = FontWeight.Medium)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 
-    if (mostrarDialogoContacto) {
+    // Modal con el resultado de la consulta de alumno (nombre, saldo e historial)
+    if (mostrarDialogoAlumno && nombreAlumnoModal != null) {
         AlertDialog(
-            onDismissRequest = { mostrarDialogoContacto = false },
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            title = {
-                Text(
-                    text = "Contacto del Kiosco",
-                    color = KioscoMostaza,
-                    fontWeight = FontWeight.Bold
-                )
-            },
+            onDismissRequest = { mostrarDialogoAlumno = false },
+            title = { Text("Hola, $nombreAlumnoModal!", color = KioscoMostaza) },
             text = {
                 Column {
                     Text(
-                        text = "¿Tenés consultas? Escribinos por WhatsApp:",
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = WHATSAPP_NUMERO,
+                        text = "Saldo actual:",
                         color = KioscoDorado,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
+                        fontSize = 12.sp
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Horario: Lun a Vie, 7:30 – 17:00 hs",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = formatearPrecio(saldoAlumnoModal ?: 0.0),
+                        color = KioscoMostaza,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 26.sp
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Últimos movimientos",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    historialAlumnoModal.forEach { compra ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(text = compra.detalle, color = Color.White, fontSize = 13.sp)
+                                Text(text = compra.fecha, color = KioscoTextoSecundario, fontSize = 11.sp)
+                            }
+                            Text(
+                                text = "-${formatearPrecio(compra.monto)}",
+                                color = Color(0xFFFF8A65),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        mostrarDialogoContacto = false
-                        abrirWhatsApp()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = KioscoMostaza,
-                        contentColor = KioscoNegro
-                    )
-                ) {
-                    Text("Abrir WhatsApp")
+                TextButton(onClick = { mostrarDialogoAlumno = false }) {
+                    Text("Cerrar", color = KioscoMostaza)
                 }
             },
-            dismissButton = {
+            containerColor = KioscoSuperficie
+        )
+    }
+
+    // Diálogo de Contacto (WhatsApp e Instagram)
+    if (mostrarDialogoContacto) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoContacto = false },
+            title = { Text("Contacto", color = KioscoMostaza) },
+            text = {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Chat, contentDescription = null, tint = Color(0xFF25D366))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("WhatsApp", color = Color.White, fontWeight = FontWeight.Medium)
+                            Text("+54 388 434-4567", color = KioscoTextoSecundario, fontSize = 12.sp)
+                        }
+                    }
+                    TextButton(
+                        onClick = {
+                            val texto = java.net.URLEncoder.encode(WHATSAPP_TEXTO_DEFECTO, "UTF-8")
+                            uriHandler.openUri("https://wa.me/$WHATSAPP_NUMERO?text=$texto")
+                        },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Abrir WhatsApp", color = Color(0xFF25D366))
+                    }
+
+                    HorizontalDivider(color = KioscoDorado.copy(alpha = 0.2f))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = null, tint = KioscoMostaza)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Instagram", color = Color.White, fontWeight = FontWeight.Medium)
+                            Text("@$INSTAGRAM_USUARIO", color = KioscoTextoSecundario, fontSize = 12.sp)
+                        }
+                    }
+                    TextButton(
+                        onClick = { uriHandler.openUri("https://instagram.com/$INSTAGRAM_USUARIO") },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Abrir Instagram", color = KioscoMostaza)
+                    }
+                }
+            },
+            confirmButton = {
                 TextButton(onClick = { mostrarDialogoContacto = false }) {
                     Text("Cerrar", color = KioscoDorado)
                 }
-            }
+            },
+            containerColor = KioscoSuperficie
         )
     }
 }
+
+/**
+ * Genera una simulación estable (por nombre) de las últimas 3 compras/cargas de un alumno.
+ * En un futuro esto podría reemplazarse por una consulta real a una subcolección "COMPRAS".
+ */
+private fun generarHistorialSimulado(nombre: String): List<CompraSimulada> {
+    val detalles = listOf(
+        "Golosinas surtidas",
+        "Snack + Bebida",
+        "Combo Merienda",
+        "Galletitas y jugo",
+        "Recarga de saldo"
+    )
+    val random = Random(nombre.hashCode())
+    val formatoFecha = SimpleDateFormat("dd/MM/yyyy", Locale("es", "AR"))
+    val calendario = Calendar.getInstance()
+
+    return (0 until 3).map {
+        calendario.add(Calendar.DAY_OF_YEAR, -random.nextInt(1, 5))
+        val monto = 200.0 + random.nextInt(1, 20) * 50.0
+        CompraSimulada(
+            detalle = detalles[random.nextInt(detalles.size)],
+            fecha = formatoFecha.format(calendario.time),
+            monto = monto
+        )
+    }
+}
+
+private fun formatearPrecio(precio: Double): String {
+    val formato = NumberFormat.getCurrencyInstance(Locale("es", "AR"))
+    return formato.format(precio)
+}
+
+@Composable
+private fun Modifier.verticalScrollFallback(): Modifier {
+    // Envuelve el contenido con scroll vertical para que no se corte en pantallas chicas
+    val scrollState = rememberScrollState()
+    return this.then(Modifier.verticalScroll(scrollState))
+}
+
+@Composable
+private fun outlinedTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = KioscoMostaza,
+    unfocusedBorderColor = KioscoDorado.copy(alpha = 0.5f),
+    focusedLabelColor = KioscoMostaza,
+    unfocusedLabelColor = KioscoDorado,
+    cursorColor = KioscoMostaza,
+    focusedTextColor = Color.White,
+    unfocusedTextColor = Color.White
+)

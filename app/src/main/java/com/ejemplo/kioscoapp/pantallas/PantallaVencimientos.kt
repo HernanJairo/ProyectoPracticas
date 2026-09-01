@@ -47,7 +47,7 @@ val listaVencimientosPrueba = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaVencimientos(navController: NavController) {
+fun PantallaVencimientos(navController: NavController, rol: String, nombreUsuario: String) {
     var filtroSeleccionado by remember { mutableStateOf("Todos") }
 
     val listaFiltrada = when (filtroSeleccionado) {
@@ -63,10 +63,15 @@ fun PantallaVencimientos(navController: NavController) {
 
     Scaffold(
         topBar = {
-            BarraSuperior(titulo = "Control de Vencimientos")
+            BarraSuperior(
+                titulo = "Control de Vencimientos",
+                nombreUsuario = nombreUsuario,
+                rolUsuario = rol,
+                navController = navController
+            )
         },
         bottomBar = {
-            BarraInferior(navController = navController)
+            BarraInferior(navController = navController, rol = rol)
         },
         containerColor = KioscoNegro
     ) { innerPadding ->

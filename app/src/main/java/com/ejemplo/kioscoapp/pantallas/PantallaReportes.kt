@@ -29,10 +29,17 @@ val rankingMasVendidos = listOf(
 )
 
 @Composable
-fun PantallaReportes(navController: NavController) {
+fun PantallaReportes(navController: NavController, rol: String, nombreUsuario: String) {
     Scaffold(
-        topBar = { BarraSuperior(titulo = "Reportes y Métricas") },
-        bottomBar = { BarraInferior(navController = navController) },
+        topBar = { 
+            BarraSuperior(
+                titulo = "Reportes y Métricas",
+                nombreUsuario = nombreUsuario,
+                rolUsuario = rol,
+                navController = navController
+            ) 
+        },
+        bottomBar = { BarraInferior(navController = navController, rol = rol) },
         containerColor = KioscoNegro
     ) { innerPadding ->
         Column(
