@@ -120,7 +120,7 @@ fun BarraSuperior(
                                 onClick = {
                                     menuUsuarioExpandido = false
                                     navController?.navigate("login") {
-                                        popUpTo("login") { inclusive = true }
+                                        popUpTo(0) { inclusive = true }
                                     }
                                 }
                             )
