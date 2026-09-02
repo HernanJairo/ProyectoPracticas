@@ -1,5 +1,6 @@
 package com.ejemplo.kioscoapp.pantallas
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -49,6 +51,7 @@ fun PantallaLogin(
     onIniciarSesionPersonal: (String, String) -> Unit
 ) {
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
 
     var dniAlumno by remember { mutableStateOf("") }
     var usuarioPersonal by remember { mutableStateOf("") }
@@ -345,8 +348,12 @@ fun PantallaLogin(
                     }
                     TextButton(
                         onClick = {
-                            val texto = java.net.URLEncoder.encode(WHATSAPP_TEXTO_DEFECTO, "UTF-8")
-                            uriHandler.openUri("https://wa.me/$WHATSAPP_NUMERO?text=$texto")
+                            try {
+                                val texto = java.net.URLEncoder.encode(WHATSAPP_TEXTO_DEFECTO, "UTF-8")
+                                uriHandler.openUri("https://wa.me/$WHATSAPP_NUMERO?text=$texto")
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "No se pudo abrir WhatsApp", Toast.LENGTH_SHORT).show()
+                            }
                         },
                         modifier = Modifier.align(Alignment.End)
                     ) {
@@ -369,7 +376,13 @@ fun PantallaLogin(
                         }
                     }
                     TextButton(
-                        onClick = { uriHandler.openUri("https://instagram.com/$INSTAGRAM_USUARIO") },
+                        onClick = {
+                            try {
+                                uriHandler.openUri("https://instagram.com/$INSTAGRAM_USUARIO")
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "No se pudo abrir el navegador", Toast.LENGTH_SHORT).show()
+                            }
+                        },
                         modifier = Modifier.align(Alignment.End)
                     ) {
                         Text("Abrir Instagram", color = KioscoMostaza)

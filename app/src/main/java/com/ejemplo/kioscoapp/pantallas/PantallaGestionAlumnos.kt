@@ -85,7 +85,7 @@ fun PantallaGestionAlumnos(navController: NavController, rol: String, nombreUsua
                                 dni = doc.id,
                                 nombre = doc.getString("nombre") ?: "",
                                 apellido = doc.getString("apellido") ?: "",
-                                saldo = doc.getDouble("saldo") ?: 0.0
+                                saldo = (doc.get("saldo") as? Number)?.toDouble() ?: 0.0
                             )
                         )
                     }
@@ -334,7 +334,7 @@ fun PantallaGestionAlumnos(navController: NavController, rol: String, nombreUsua
             confirmButton = {
                 Button(
                     onClick = {
-                        val valorIngresado = montoACargar.toDoubleOrNull() ?: 0.0
+                        val valorIngresado = montoACargar.trim().replace(',', '.').toDoubleOrNull() ?: 0.0
                         val alumno = alumnoSeleccionado
                         if (alumno != null) {
                             val saldoFinal = if (esModoFijo) valorIngresado else (alumno.saldo + valorIngresado)

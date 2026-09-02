@@ -29,15 +29,17 @@ fun NavegacionApp() {
                 onIrACatalogo = { 
                     rolUsuario = "invitado"
                     nombreUsuario = "Invitado"
-                    navController.navigate("catalogo_invitado") 
+                    navController.navigate("catalogo_invitado") {
+                        popUpTo("login") { inclusive = true }
+                    }
                 },
                 onConsultarDniAlumno = { dniIngresado: String, onResultado: (String, Double) -> Unit, onError: () -> Unit ->
                     db.collection("CLIENTES").document(dniIngresado).get()
                         .addOnSuccessListener { doc ->
                             if (doc.exists()) {
                                 val nombre = doc.getString("nombre") ?: "Alumno"
-                                // LEER SALDO COMO DOUBLE (Requisito 4)
-                                val saldo = doc.getDouble("saldo") ?: 0.0
+                                // LEER SALDO (soporta Int, Long o Double en Firestore)
+                                val saldo = (doc.get("saldo") as? Number)?.toDouble() ?: 0.0
                                 onResultado(nombre, saldo)
                             } else {
                                 onError()
@@ -66,9 +68,13 @@ fun NavegacionApp() {
                                 Toast.makeText(context, "Bienvenido $nombre ($rol)", Toast.LENGTH_SHORT).show()
                                 
                                 if (rol == "admin" || rol == "administrador") {
-                                    navController.navigate("reportes")
+                                    navController.navigate("reportes") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
                                 } else {
-                                    navController.navigate("ventas")
+                                    navController.navigate("ventas") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
                                 }
                             } else {
                                 Toast.makeText(context, "Usuario o contraseña incorrectos", Toast.LENGTH_SHORT).show()
