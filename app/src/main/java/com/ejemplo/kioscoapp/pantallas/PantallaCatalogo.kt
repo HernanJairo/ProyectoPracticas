@@ -1,5 +1,6 @@
 package com.ejemplo.kioscoapp.pantallas
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,9 +34,6 @@ data class Producto(
     val stock: Int
 )
 
-// Catálogo de prueba. Cuando exista la colección "PRODUCTOS" en Firestore,
-// esta lista se puede reemplazar por una carga con addSnapshotListener igual
-// que se hace con CLIENTES en PantallaGestionAlumnos.
 private val CATALOGO_PRODUCTOS = listOf(
     // Golosinas
     Producto("Alfajor Jorgito", "Golosinas", 800.0, 24),
@@ -74,6 +72,19 @@ fun PantallaCatalogo(
     rol: String = "",
     nombreUsuario: String = ""
 ) {
+    // Intercepta la tecla ESC o el botón Atrás del teléfono
+    BackHandler {
+        if (esInvitado) {
+            navController.navigate("login") {
+                popUpTo("login") { inclusive = true }
+            }
+        } else {
+            if (!navController.popBackStack()) {
+                navController.navigate("ventas")
+            }
+        }
+    }
+
     val productosPorCategoria = remember {
         ORDEN_CATEGORIAS.associateWith { categoria ->
             CATALOGO_PRODUCTOS.filter { it.categoria == categoria }
@@ -84,7 +95,6 @@ fun PantallaCatalogo(
         topBar = {
             BarraSuperior(
                 titulo = "Catálogo de Productos",
-                // Invitado: solo flecha para volver al login. Logueado: sin flecha, con avatar.
                 mostrarBotonAtras = esInvitado,
                 navController = navController,
                 nombreUsuario = nombreUsuario,
@@ -93,7 +103,6 @@ fun PantallaCatalogo(
             )
         },
         bottomBar = {
-            // Invitado: se oculta la BarraInferior por completo
             if (!esInvitado) {
                 BarraInferior(navController = navController, rol = rol)
             }
