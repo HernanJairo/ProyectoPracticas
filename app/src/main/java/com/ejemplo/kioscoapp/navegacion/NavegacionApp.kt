@@ -26,12 +26,10 @@ fun NavegacionApp() {
     ) {
         composable("login") {
             PantallaLogin(
-                onIrACatalogo = { 
+                onIrACatalogo = {
                     rolUsuario = "invitado"
                     nombreUsuario = "Invitado"
-                    navController.navigate("catalogo_invitado") {
-                        popUpTo("login") { inclusive = true }
-                    }
+                    navController.navigate("catalogo_invitado")
                 },
                 onConsultarDniAlumno = { dniIngresado: String, onResultado: (String, Double) -> Unit, onError: () -> Unit ->
                     db.collection("CLIENTES").document(dniIngresado).get()

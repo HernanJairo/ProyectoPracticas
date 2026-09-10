@@ -44,7 +44,15 @@ fun BarraSuperior(
         },
         navigationIcon = {
             if (mostrarBotonAtras && navController != null) {
-                IconButton(onClick = { navController.popBackStack() }) {
+                IconButton(onClick = {
+                    if (esInvitado) {
+                        navController.navigate("login") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    } else {
+                        navController.popBackStack()
+                    }
+                }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Volver",
